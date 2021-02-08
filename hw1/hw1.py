@@ -1,9 +1,12 @@
-from typing import Callable
+from typing import Callable, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
 def print_section_1_2_stats(data):
+    print('---Basic Data Statistics---')
+    print('Entries:', len(data))
+    print()
     print_basic_stats(data, 'Rented Bike Count', {
                       'mean': True,  'stdev': True, 'mode': True, 'median': True, 'min': True, 'max': True, 'percentiles': [10, 90]})
     print_basic_stats(data, 'Temperature(C)', {
@@ -140,24 +143,34 @@ def data():
     return data
 
 
-def find_outliers(data: pd.Series, is_outlier: Callable[[pd.Series, None], bool]):
+def find_outliers(data: pd.Series, is_outlier: Callable[[pd.Series, None], bool]) -> dict:
     summary = {}
     summary["Mean"] = data.mean()
     summary["St. Dev."] = data.std()
-    summary["Outliers Count"] = 0
     summary["Outliers"] = [value for value in data if is_outlier(data, value)]
     summary["Outliers Count"] = len(summary['Outliers'])
+    if summary["Outliers Count"] > 0:
+        summary["Max Outlier"] = max(summary["Outliers"])
+        summary["Min Outlier"] = min(summary["Outliers"])
+        summary["Avg. Outlier"] = sum(summary["Outliers"]) / len(summary['Outliers'])
     return summary
 
+def remove_outliers(data: pd.Series, is_outlier: Callable[[pd.Series, None], bool]) -> Tuple[pd.Series,int]:
+    new_series = pd.Series(data=[val for val in data if not is_outlier(data, val)], name=data.name)
+    return new_series, len(data) - len(new_series)
+        
 
-def is_outlier(data: pd.Series, value):
+
+def is_outlier(data: pd.Series, value: None) -> bool:
+    sensitivity = 1.5
     quartile_one, quartile_three = data.quantile(0.25), data.quantile(0.75)
     iqr = quartile_three - quartile_one
-    above_below_iqr = 1.5
     lower_lim, upper_lim = quartile_one - iqr * \
-        above_below_iqr, quartile_three + iqr * above_below_iqr
+        sensitivity, quartile_three + iqr * sensitivity
     return value < lower_lim or value > upper_lim
 
+def is_outlier_sensitivity_2(data: pd.Series, value: None):
+    return is_outlier(data, value, sensitivity=2)
 
 def other_graphs():
     # Bikes Rented vs. Rainfall
