@@ -1,6 +1,7 @@
 from typing import Callable, Tuple
 import pandas as pd
 import matplotlib.pyplot as plt
+import texttable as tt
 
 
 def print_section_1_2_stats(data):
@@ -52,11 +53,20 @@ def print_section_1_4_outliers(data: pd.DataFrame, outlier_src: str, sort_by: st
         summary['Total Outliers'] += summary_initial['Outliers Count']
         summary['Number Days Examined'] += 1
 
-    print('---Results---')
-    print('Total Outliers:', summary['Total Outliers'])
-    print('Max Outliers In a Day:', summary['Max Outliers In a Day'])
-    print('Number of Days w/ Outliers:', summary['Number of Days w/ Outliers'])
-    print('Number Days Examined:', summary['Number Days Examined'])
+    # print('---Results---')
+    # print('Total Outliers:', summary['Total Outliers'])
+    # print('Max Outliers In a Day:', summary['Max Outliers In a Day'])
+    # print('Number of Days w/ Outliers:', summary['Number of Days w/ Outliers'])
+    # print('Number Days Examined:', summary['Number Days Examined'])
+
+    table = tt.Texttable()
+    table.add_rows([['', 'Count'],
+                    ['Total Outliers:', summary['Total Outliers']],
+                    ['Max Outliers In a Day:', summary['Max Outliers In a Day']],
+                    ['Number of Days w/ Outliers:', summary['Number of Days w/ Outliers']],
+                    ['Number Days Examined:', summary['Number Days Examined']]])
+    table.set_cols_align(['l','c'])
+    print(table.draw())
 
 
 def print_basic_stats(data, attribute, stats_to_print):
