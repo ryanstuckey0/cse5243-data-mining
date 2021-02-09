@@ -1,4 +1,4 @@
-Date,Rented Bike Count,Temperature(C),Humidity(%),Wind speed (m/s),Visibility (10m),Dew point temperature(C),Solar Radiation (MJ/m2),Rainfall(mm),Snowfall (cm),Seasons,Holiday,Functioning Day,IsitDay
+Date,Rented Bike Count,Temperature(°C),Humidity(%),Wind speed (m/s),Visibility (10m),Dew point temperature(°C),Solar Radiation (MJ/m2),Rainfall(mm),Snowfall (cm),Seasons,Holiday,Functioning Day,IsitDay
 4/1/2018,310,-3.1,41,2,1742,-14.5,0,0,0,Winter,No Holiday,Yes,FALSE
 11/11/2018,655,9.4,85,0.6,241,6.9,0,0,0,Autumn,No Holiday,Yes,FALSE
 27/05/2018,1727,20.6,41,2.3,1788,6.8,0.09,0,0,Spring,No Holiday,Yes,FALSE

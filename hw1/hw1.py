@@ -137,9 +137,16 @@ def keep_keys(dict, should_keep,  value):
 
 
 def data():
+    # import data from CSV
     data = pd.read_csv("altered_seoulbokedata_train.csv", true_values=[
                        'Holiday', 'Yes'], false_values=['No Holiday', 'No'], parse_dates=True)
+    # change the dates to timestamps to ease processing
     data['Date'] = data.astype({'Date': 'datetime64'})['Date']
+    
+    # some columns have special characters- fix this to make it easier to access them
+    cols = [col for col in data]
+    cols[2], cols[6] =  'Temperature(C)', 'Dew point temperature(C)'
+    data.columns = cols
     return data
 
 
