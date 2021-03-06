@@ -5,6 +5,57 @@ import matplotlib.pyplot as plt
 import texttable as tt
 
 
+def hw1_transformation(data: pd.DataFrame):
+    data_original_size = len(data)
+    # find temperature outliers
+    day_to_temp_dict = sort_by_categories_to_dict_w_index(
+        data, 'Temperature(C)', 'Date')
+    temp_outlier_indices = []
+    for date in day_to_temp_dict:
+        for t in day_to_temp_dict[date]:
+            if is_outlier(pd.Series([temp[0] for temp in day_to_temp_dict[date]]), t[0]):
+                temp_outlier_indices.append(t[1])
+
+    # calculate dew point outliers
+    day_to_dew_point_dict = sort_by_categories_to_dict_w_index(
+        data, 'Dew point temperature(C)', 'Date')
+    dew_point_outlier_indices = []
+    for date in day_to_dew_point_dict:
+        for t in day_to_dew_point_dict[date]:
+            if is_outlier(pd.Series([temp[0] for temp in day_to_dew_point_dict[date]]), t[0]):
+                dew_point_outlier_indices.append(t[1])
+
+    humidity_elims, temp_elims = 0, 0
+    # drop any data with errors or outliers
+    for row in data.itertuples():
+        # drop rows with outlier temps
+        if row[0] in temp_outlier_indices:
+            data.drop(row[0], inplace=True)
+            temp_elims += 1
+            continue
+
+        # eliminate humidities based on calculation, but skip check if a) dew point is greater than temperature, or b) dew point is an outlier
+        if row[7] > row[3] or row[0] in dew_point_outlier_indices:
+            continue
+        humidity_rec, humidity_calc = row[4], humidity(row[7], row[3])
+        # eliminate row if: a) humidity <= 0m b) recorded humidity not in (calculated humidity +- 5)
+        if row[4] <= 0 or humidity_rec < humidity_calc - 5 or humidity_rec > humidity_calc + 5:
+            data.drop(row[0], inplace=True)
+            humidity_elims += 1
+            continue
+
+    table = tt.Texttable()
+    table.add_row(['Elimination Cause', 'Count'])
+    table.add_row(['Temperature Outlier', temp_elims])
+    table.add_row(['Humidity Error', humidity_elims])
+    table.add_row(['Total Eliminations', data_original_size - len(data)])
+    print(table.draw())
+
+    data_to_remove = ['Visibility (10m)', 'Dew point temperature(C)', 'Rainfall(mm)', 'Snowfall (cm)', 'Seasons', 'Holiday', 'Functioning Day', 'Date', 'IsitDay']
+    for col in data_to_remove:
+        data.drop(col, axis=1, inplace=True)
+
+
 # prints stats on attribute in data
 def print_basic_stats(data: str, attribute: str, stats_to_print: Dict[str, None]):
     print_header(attribute)
