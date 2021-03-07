@@ -51,9 +51,11 @@ def hw1_transformation(data: pd.DataFrame):
     table.add_row(['Total Eliminations', data_original_size - len(data)])
     print(table.draw())
 
+    target_class = data['IsitDay']
     data_to_remove = ['Visibility (10m)', 'Dew point temperature(C)', 'Rainfall(mm)', 'Snowfall (cm)', 'Seasons', 'Holiday', 'Functioning Day', 'Date', 'IsitDay']
     for col in data_to_remove:
         data.drop(col, axis=1, inplace=True)
+    return target_class
 
 
 # prints stats on attribute in data
