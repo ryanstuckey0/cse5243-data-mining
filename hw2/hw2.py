@@ -51,6 +51,10 @@ def hw1_transformation(data: pd.DataFrame):
     table.add_row(['Total Eliminations', data_original_size - len(data)])
     print(table.draw())
 
+    target_class = remove_cols(data)
+    return target_class
+
+def remove_cols(data: pd.DataFrame):
     target_class = data['IsitDay']
     data_to_remove = ['Visibility (10m)', 'Dew point temperature(C)', 'Rainfall(mm)', 'Snowfall (cm)', 'Seasons', 'Holiday', 'Functioning Day', 'Date', 'IsitDay']
     for col in data_to_remove:
