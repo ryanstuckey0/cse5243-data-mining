@@ -3,6 +3,149 @@ import math
 import pandas as pd
 import matplotlib.pyplot as plt
 import texttable as tt
+from statistics import mean
+
+
+def get_classifier_cmp_table(knn_manhat_score, knn_manhat_cost_scores, knn_euclid_scores, knn_euclid_cost_scores, tree_scores, tree_cost_scores, svm_scores, svm_cost_scores):
+    clfs_cmp = tt.Texttable()
+    clfs_cmp.add_row(['Classifier Comparison', '', '', '', '', ''])
+    clfs_cmp.add_row(['Classifier', 'Accuracy', 'F-measure',
+                      'Precision', 'Recall', 'Cost'])
+    # KNN
+    clfs_cmp.add_row(['KNN (Manhattan, k=3)', mean(knn_manhat_score[2]['test_accuracy']), mean(knn_manhat_score[2]['test_f1']), mean(
+        knn_manhat_score[2]['test_precision']), mean(knn_manhat_score[2]['test_recall']), knn_manhat_cost_scores[2]])
+    clfs_cmp.add_row(['KNN (Euclidean, k=3)', mean(knn_euclid_scores[2]['test_accuracy']), mean(knn_euclid_scores[2]['test_f1']), mean(
+        knn_euclid_scores[2]['test_precision']), mean(knn_euclid_scores[2]['test_recall']), knn_euclid_cost_scores[2]])
+
+    # Decision Tree
+    clfs_cmp.add_row(['Decision Tree (Gini, Best)', mean(tree_scores['gini']['best']['test_accuracy']), mean(tree_scores['gini']['best']['test_f1']), mean(
+        tree_scores['gini']['best']['test_precision']), mean(tree_scores['gini']['best']['test_recall']), tree_cost_scores['gini']['best']])
+    clfs_cmp.add_row(['Decision Tree (Entropy, Best)', mean(tree_scores['entropy']['best']['test_accuracy']), mean(tree_scores['entropy']['best']['test_f1']), mean(
+        tree_scores['entropy']['best']['test_precision']), mean(tree_scores['entropy']['best']['test_recall']), tree_cost_scores['entropy']['best']])
+
+    # SVM
+    clfs_cmp.add_row(['SVM (rbf, C=100)', mean(svm_scores['rbf']['100']['test_accuracy']), mean(svm_scores['rbf']['100']['test_f1']), mean(
+        svm_scores['rbf']['100']['test_precision']), mean(svm_scores['rbf']['100']['test_recall']), svm_cost_scores['rbf']['100']])
+    clfs_cmp.add_row(['SVM (rbf, C=10)', mean(svm_scores['rbf']['10']['test_accuracy']), mean(svm_scores['rbf']['10']['test_f1']), mean(
+        svm_scores['rbf']['10']['test_precision']), mean(svm_scores['rbf']['10']['test_recall']), svm_cost_scores['rbf']['10']])
+    return clfs_cmp
+
+
+def get_final_classifier_cmp_table():
+    pros_cons_table = tt.Texttable()
+    pros_cons_table.add_row(['Classifier Comparison', '', '', ''])
+    pros_cons_table.add_row(['Classifier', 'Pros', 'Cons', 'Summary', ])
+    pros_cons_table.add_row(['KNN', 'High scores on precision, accuracy', 'Very large cost compared to others, costly to compute and run',
+                             'Overall, not bad. But, compared to our other classifiers, we could definitely do a lot better', ])
+    pros_cons_table.add_row(['Decision Tree', 'Very low cost, intuitive and easy to understand, high decently high precision and other scores',
+                             'Not a whole lot here- precision is lower than KNN', 'Better than KNN in terms of cost, but precision is slightly lower', ])
+    pros_cons_table.add_row(['SVM', 'Great numbers all around, lowest cost, high precision', 'Very time-consuming and resource-intensive to run, prone to overfitting with such a high C value',
+                             'SVM produces great preliminary results with low cost and high precision. However, it is costlier to run.'])
+    return pros_cons_table
+
+
+def update_min_max(scores, cost_scores, svm_saved_scores, kernel, c):
+    for test in scores[kernel][c].keys():
+        if test not in ['test_accuracy', 'test_f1', 'test_precision', 'test_recall']:
+            continue
+        if svm_saved_scores[kernel][test]['min']['val'] is None or mean(scores[kernel][c][test]) < svm_saved_scores[kernel][test]['min']['val']:
+            svm_saved_scores[kernel][test]['min']['val'] = mean(
+                scores[kernel][c][test])
+            svm_saved_scores[kernel][test]['min']['c'] = c
+        if svm_saved_scores[kernel][test]['max']['val'] is None or mean(scores[kernel][c][test]) > svm_saved_scores[kernel][test]['max']['val']:
+            svm_saved_scores[kernel][test]['max']['val'] = mean(
+                scores[kernel][c][test])
+            svm_saved_scores[kernel][test]['max']['c'] = c
+    if svm_saved_scores[kernel]['cost']['min']['val'] is None or cost_scores[kernel][c] < svm_saved_scores[kernel]['cost']['min']['val']:
+        svm_saved_scores[kernel]['cost']['min']['val'] = cost_scores[kernel][c]
+        svm_saved_scores[kernel]['cost']['min']['c'] = c
+    if svm_saved_scores[kernel]['cost']['max']['val'] is None or cost_scores[kernel][c] > svm_saved_scores[kernel]['cost']['max']['val']:
+        svm_saved_scores[kernel]['cost']['max']['val'] = cost_scores[kernel][c]
+        svm_saved_scores[kernel]['cost']['max']['c'] = c
+
+
+def find_absolute_min_max(saved_scores):
+    d = {
+        'test_accuracy':  {
+            'min': {'c': None, 'kernel': None, 'val': None},
+            'max': {'c': None, 'kernel': None, 'val': None}
+        },
+        'test_f1': {
+            'min': {'c': None, 'kernel': None, 'val': None},
+            'max': {'c': None, 'kernel': None, 'val': None}
+        },
+        'test_precision': {
+            'min': {'c': None, 'kernel': None, 'val': None},
+            'max': {'c': None, 'kernel': None, 'val': None}
+        },
+        'test_recall': {
+            'min': {'c': None, 'kernel': None, 'val': None},
+            'max': {'c': None, 'kernel': None, 'val': None}
+        },
+        'cost': {
+            'min': {'c': None, 'kernel': None, 'val': None},
+            'max': {'c': None, 'kernel': None, 'val': None}
+        }
+    }
+    for test in d.keys():
+        for kernel in ['linear', 'poly', 'rbf', 'sigmoid']:
+            if d[test]['min']['val'] is None or saved_scores[kernel][test]['min']['val'] < d[test]['min']['val']:
+                d[test]['min']['val'] = saved_scores[kernel][test]['min']['val']
+                d[test]['min']['c'] = saved_scores[kernel][test]['min']['c']
+                d[test]['min']['kernel'] = kernel
+            if d[test]['max']['val'] is None or saved_scores[kernel][test]['max']['val'] > d[test]['max']['val']:
+                d[test]['max']['val'] = saved_scores[kernel][test]['max']['val']
+                d[test]['max']['c'] = saved_scores[kernel][test]['max']['c']
+                d[test]['max']['kernel'] = kernel
+    return d
+
+
+def get_svm_results(final_min_max) -> tt.Texttable:
+    table = tt.Texttable()
+    table.add_row(['SVM Results', '', '', '', '', '', ''])
+    table.add_row(['Test', 'Kernel (min)', 'C (min)',
+                   'Value (min)', 'Kernel (max)', 'C (max)', 'Value (max)'])
+    table.add_row(['Accuracy',
+                   final_min_max['test_accuracy']['min']['kernel'],
+                   final_min_max['test_accuracy']['min']['c'],
+                   final_min_max['test_accuracy']['min']['val'],
+                   final_min_max['test_accuracy']['max']['kernel'],
+                   final_min_max['test_accuracy']['max']['c'],
+                   final_min_max['test_accuracy']['max']['val'],
+                   ])
+    table.add_row(['F-measure',
+                   final_min_max['test_f1']['min']['kernel'],
+                   final_min_max['test_f1']['min']['c'],
+                   final_min_max['test_f1']['min']['val'],
+                   final_min_max['test_f1']['max']['kernel'],
+                   final_min_max['test_f1']['max']['c'],
+                   final_min_max['test_f1']['max']['val'],
+                   ])
+    table.add_row(['Precision',
+                   final_min_max['test_precision']['min']['kernel'],
+                   final_min_max['test_precision']['min']['c'],
+                   final_min_max['test_precision']['min']['val'],
+                   final_min_max['test_precision']['max']['kernel'],
+                   final_min_max['test_precision']['max']['c'],
+                   final_min_max['test_precision']['max']['val'],
+                   ])
+    table.add_row(['Recall',
+                   final_min_max['test_recall']['min']['kernel'],
+                   final_min_max['test_recall']['min']['c'],
+                   final_min_max['test_recall']['min']['val'],
+                   final_min_max['test_recall']['max']['kernel'],
+                   final_min_max['test_recall']['max']['c'],
+                   final_min_max['test_recall']['max']['val'],
+                   ])
+    table.add_row(['Cost',
+                   final_min_max['cost']['min']['kernel'],
+                   final_min_max['cost']['min']['c'],
+                   final_min_max['cost']['min']['val'],
+                   final_min_max['cost']['max']['kernel'],
+                   final_min_max['cost']['max']['c'],
+                   final_min_max['cost']['max']['val'],
+                   ])
+    return table
 
 
 def hw1_transformation(data: pd.DataFrame):
@@ -54,9 +197,11 @@ def hw1_transformation(data: pd.DataFrame):
     target_class = remove_cols(data)
     return target_class
 
+
 def remove_cols(data: pd.DataFrame):
     target_class = data['IsitDay']
-    data_to_remove = ['Visibility (10m)', 'Dew point temperature(C)', 'Rainfall(mm)', 'Snowfall (cm)', 'Seasons', 'Holiday', 'Functioning Day', 'Date', 'IsitDay']
+    data_to_remove = ['Visibility (10m)', 'Dew point temperature(C)', 'Rainfall(mm)',
+                      'Snowfall (cm)', 'Seasons', 'Holiday', 'Functioning Day', 'Date', 'IsitDay']
     for col in data_to_remove:
         data.drop(col, axis=1, inplace=True)
     return target_class
@@ -95,6 +240,19 @@ def print_basic_stats(data: str, attribute: str, stats_to_print: Dict[str, None]
             table.add_row([str(key), dict[key]])
     print(table.draw())
     print()
+
+
+def get_svm_rbf_table(svm_scores, svm_cost_scores):
+    rbf_table = tt.Texttable()
+    rbf_table.add_row(['RBF Kernel Results', '', '', '', '', ''])
+    rbf_table.add_row(['Test',  'C=100', 'C=10', 'C=1', 'C=0.1', 'C=0.01'])
+    rbf_table.add_row(['Accuracy', mean(svm_scores['rbf']['100']['test_accuracy']), mean(svm_scores['rbf']['10']['test_accuracy']), mean(svm_scores['rbf']['1']['test_accuracy']), mean(svm_scores['rbf']['0.1']['test_accuracy']), mean(svm_scores['rbf']['0.01']['test_accuracy'])])
+    rbf_table.add_row(['F-measure', mean(svm_scores['rbf']['100']['test_f1']), mean(svm_scores['rbf']['10']['test_f1']), mean(svm_scores['rbf']['1']['test_f1']), mean(svm_scores['rbf']['0.1']['test_f1']), mean(svm_scores['rbf']['0.01']['test_f1'])])
+    rbf_table.add_row(['Precision', mean(svm_scores['rbf']['100']['test_precision']), mean(svm_scores['rbf']['10']['test_precision']), mean(svm_scores['rbf']['1']['test_precision']), mean(svm_scores['rbf']['0.1']['test_precision']), mean(svm_scores['rbf']['0.01']['test_precision'])])
+    rbf_table.add_row(['Recall', mean(svm_scores['rbf']['100']['test_recall']), mean(svm_scores['rbf']['10']['test_recall']), mean(svm_scores['rbf']['1']['test_recall']), mean(svm_scores['rbf']['0.1']['test_recall']), mean(svm_scores['rbf']['0.01']['test_recall'])])
+    rbf_table.add_row(['Cost', svm_cost_scores['rbf']['100'], svm_cost_scores['rbf']['10'], svm_cost_scores['rbf']['1'], svm_cost_scores['rbf']['0.1'], svm_cost_scores['rbf']['0.01']])
+    return rbf_table
+
 
 
 def print_header(title: str):
@@ -210,6 +368,36 @@ def is_outlier(data: pd.Series, value: None) -> bool:
     lower_lim, upper_lim = quartile_one - iqr * \
         sensitivity, quartile_three + iqr * sensitivity
     return value < lower_lim or value > upper_lim
+
+
+def init_section5_2_dictionaries():
+    svm_scores = {
+        'linear': {},
+        'poly': {},
+        'rbf': {},
+        'sigmoid': {}
+    }
+    svm_cost_scores = {
+        'linear': {},
+        'poly': {},
+        'rbf': {},
+        'sigmoid': {}
+    }
+    svm_saved_scores = {
+        'linear': {},
+        'poly': {},
+        'rbf': {},
+        'sigmoid': {}
+    }
+    for measure in svm_saved_scores.keys():
+        svm_saved_scores[measure] = {
+            'test_accuracy': {'min': {'c': None, 'val': None}, 'max': {'c': None, 'val': None}},
+            'test_f1': {'min': {'c': None, 'val': None}, 'max': {'c': None, 'val': None}},
+            'test_recall': {'min': {'c': None, 'val': None}, 'max': {'c': None, 'val': None}},
+            'test_precision': {'min': {'c': None, 'val': None}, 'max': {'c': None, 'val': None}},
+            'cost': {'min': {'c': None, 'val': None}, 'max': {'c': None, 'val': None}},
+        }
+    return svm_scores, svm_cost_scores, svm_saved_scores
 
 
 # other graphs that I ended up not using but wanted to save the code for so I could use it later if needed
