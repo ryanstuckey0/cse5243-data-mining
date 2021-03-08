@@ -64,7 +64,7 @@ def print_section_1_4_outliers(data: pd.DataFrame, outlier_src: str, sort_by: st
     print(table.draw())
 
 # prints stats on attribute in data
-def print_basic_stats(data: str, attribute: str, stats_to_print: Dict[str, None]):
+def print_basic_stats(data: pd.DataFrame, attribute: str, stats_to_print: Dict[str, None]):
     print_header(attribute)
     is_numeric = data.dtypes[attribute] == 'int64' or data.dtypes[attribute] == 'float64'
     table = tt.Texttable()
@@ -83,7 +83,7 @@ def print_basic_stats(data: str, attribute: str, stats_to_print: Dict[str, None]
         if stats_to_print['max']:
             table.add_row(["Max:", data[attribute].max()])
         for percentile in stats_to_print['percentiles']:
-            table.add_row([str(percentile) + "th Percentile:", data.quantile(percentile / 100, 0, True)[attribute]])
+            table.add_row([str(percentile) + "th Percentile:", data.quantile(percentile / 100, 0, numeric_only=True)[attribute]])
     else: # count number of each value if non-numeric
         dict = {}
         for data in data[attribute]:
